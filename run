@@ -1,13 +1,9 @@
 #!/bin/sh
 
-VOLUME=${VOLUME:-/mirror}
-ALLOW=${ALLOW:-192.168.0.0/16 172.16.0.0/12}
-OWNER=${OWNER:-nobody}
-GROUP=${GROUP:-nogroup}
+VOLUME=${VOLUME:-/data}
+ALLOW=${ALLOW:-0.0.0.0/0}
 
-chown "${OWNER}:${GROUP}" "${VOLUME}"
-
-[ -f /etc/rsyncd.conf ] || cat <<EOF > /etc/rsyncd.conf
+[ -f /conf/rsyncd.conf ] || cat <<EOF > /conf/rsyncd.conf
 uid = ${OWNER}
 gid = ${GROUP}
 use chroot = yes
@@ -22,7 +18,10 @@ reverse lookup = no
     comment = docker volume
 EOF
 
-[ -f /etc/nginx/conf.d/default.conf ] || cat <<EOF > /etc/nginx/conf.d/default.conf
+[ -f /conf/nginx/ ] || mkdir /conf/nginx
+[ -f /conf/nginx/http.d/ ] || mkdir /conf/nginx/http.d
+
+[ -f /conf/nginx/http.d/default.conf ] || cat <<EOF > /conf/nginx/http.d/default.conf
 server {
   listen 80 default_server;
   listen [::]:80 default_server;
@@ -38,6 +37,9 @@ server {
   error_log /dev/stdout;
 }
 EOF
+
+cp /conf/rsyncd.conf /etc/rsyncd.conf
+cp /conf/nginx/http.d/default.conf /etc/nginx/http.d/default.conf
 
 rsync --no-detach --daemon --config /etc/rsyncd.conf &
 nginx -g 'daemon off; pid /run/nginx.pid;' &
